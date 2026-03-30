@@ -1,5 +1,14 @@
-const { kafka } = require("../config/kafka");
+const { kafka, USE_KAFKA } = require("../config/kafka");
 
+// 👉 If Kafka disabled → export empty function
+if (!USE_KAFKA || !kafka) {
+  console.log("Kafka disabled → consumer not started");
+
+  module.exports = async () => {};
+  return;
+}
+
+// ✅ Only create consumer if Kafka exists
 const consumer = kafka.consumer({ groupId: "ride-group" });
 
 const run = async () => {

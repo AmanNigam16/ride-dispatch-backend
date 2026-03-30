@@ -6,7 +6,7 @@ const { Server } = require("socket.io");
 
 const rideRoutes = require("./routes/rideRoutes");
 const Ride = require("./models/Ride");
-const { producer } = require("./config/kafka");
+const { USE_KAFKA, producer } = require("./config/kafka");
 const logger = require("./config/logger");
 const runConsumer = require("./kafka/consumer");
 
@@ -155,13 +155,15 @@ mongoose.connect(process.env.MONGO_URI)
   .then(async () => {
     console.log("Ride DB Connected");
 
-    // ✅ Connect Kafka Producer
-    await producer.connect();
-    console.log("Kafka Producer Connected");
+    if (USE_KAFKA && producer) {
+      await producer.connect();
+      console.log("Kafka Producer Connected");
 
-    // ✅ START CONSUMER HERE
-    await runConsumer();
-    console.log("Kafka Consumer Started");
+      await runConsumer();
+      console.log("Kafka Consumer Started");
+    } else {
+      console.log("Kafka disabled → skipping producer & consumer");
+    }
 
     // ✅ Start server in the end
     server.listen(process.env.PORT, "0.0.0.0", () => {

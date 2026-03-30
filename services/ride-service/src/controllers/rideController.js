@@ -1,6 +1,6 @@
 const { pub } = require("../config/redis");
 const Ride = require("../models/Ride");
-const { producer } = require("../config/kafka");
+const { producer, USE_KAFKA } = require("../config/kafka");
 const logger = require("../config/logger");
 
 // CREATE RIDE
@@ -21,19 +21,21 @@ exports.createRide = async (req, res, next) => {
     logger.info("Ride created", { rideId: ride._id, customerId });
 
     // ✅ KAFKA
-    await producer.send({
-      topic: "ride_created",
-      messages: [
-        {
-          value: JSON.stringify({
-            event: "ride_created",
-            version: 1,
-            timestamp: new Date().toISOString(),
-            data: ride
-          })
-        }
-      ]
-    });
+    if (USE_KAFKA && producer) {
+      await producer.send({
+        topic: "ride_created",
+        messages: [
+          {
+            value: JSON.stringify({
+              event: "ride_created",
+              version: 1,
+              timestamp: new Date().toISOString(),
+              data: ride
+            })
+          }
+        ]
+      });
+    }
 
     await pub.publish("ride_updates", JSON.stringify({              // We moved from direct Socket.IO emit → Redis Pub/Sub.
       event: "new_ride",
@@ -80,19 +82,21 @@ exports.acceptRide = async (req, res, next) => {
     logger.info("Ride accepted", { rideId: ride._id, driverId });
 
     // ✅ KAFKA
-    await producer.send({
-      topic: "ride_accepted",
-      messages: [
-        {
-          value: JSON.stringify({
-            event: "ride_accepted",
-            version: 1,
-            timestamp: new Date().toISOString(),
-            data: ride
-          })
-        }
-      ]
-    });
+    if (USE_KAFKA && producer) {
+      await producer.send({
+        topic: "ride_accepted",
+        messages: [
+          {
+            value: JSON.stringify({
+              event: "ride_accepted",
+              version: 1,
+              timestamp: new Date().toISOString(),
+              data: ride
+            })
+          }
+        ]
+      });
+    }
 
     // ✅ Redis Pub-Sub
     await pub.publish("ride_updates", JSON.stringify({
@@ -123,19 +127,21 @@ exports.updateRideStatus = async (req, res, next) => {
     logger.info("Ride status updated", { rideId: ride._id, status });
 
     // ✅ KAFKA
-    await producer.send({
-      topic: "ride_status_updated",
-      messages: [
-        {
-          value: JSON.stringify({
-            event: "ride_status_updated",
-            version: 1,
-            timestamp: new Date().toISOString(),
-            data: ride
-          })
-        }
-      ]
-    }); 
+    if (USE_KAFKA && producer) {
+      await producer.send({
+        topic: "ride_status_updated",
+        messages: [
+          {
+            value: JSON.stringify({
+              event: "ride_status_updated",
+              version: 1,
+              timestamp: new Date().toISOString(),
+              data: ride
+            })
+          }
+        ]
+      });
+    }
 
     // ✅ Redis Pub-Sub model
     await pub.publish("ride_updates", JSON.stringify({
